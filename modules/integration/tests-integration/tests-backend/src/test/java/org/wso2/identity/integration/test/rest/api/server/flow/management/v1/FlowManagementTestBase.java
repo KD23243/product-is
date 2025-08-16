@@ -38,6 +38,9 @@ public class FlowManagementTestBase extends RESTAPIServerTestBase {
     protected static final String API_VERSION = "v1";
     private static final String API_PACKAGE_NAME = "org.wso2.carbon.identity.api.server.flow.management.v1";
     protected static String swaggerDefinition;
+    protected static String REGISTRATION = "REGISTRATION";
+    protected static String PASSWORD_RECOVERY = "PASSWORD_RECOVERY";
+    protected static String INVITED_USER_REGISTRATION = "INVITED_USER_REGISTRATION";
 
     static {
         try {

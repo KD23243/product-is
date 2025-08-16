@@ -36,7 +36,6 @@ import org.wso2.identity.integration.test.restclients.FlowManagementClient;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -66,12 +65,6 @@ public class FlowManagementPositiveTest extends FlowManagementTestBase {
         };
     }
 
-    private static FlowRequest getFlowRequest(ObjectMapper jsonReader)
-            throws JsonProcessingException {
-
-        return jsonReader.readValue(registrationFlowRequestJson, FlowRequest.class);
-    }
-
     @BeforeClass(alwaysRun = true)
     public void init() throws IOException {
 
@@ -91,7 +84,7 @@ public class FlowManagementPositiveTest extends FlowManagementTestBase {
     public void testUpdateRegistrationFlow() throws Exception {
 
         ObjectMapper jsonReader = new ObjectMapper(new JsonFactory());
-        FlowRequest registrationFlowRequest = getFlowRequest(jsonReader);
+        FlowRequest registrationFlowRequest = getFlowRequest(jsonReader, registrationFlowRequestJson);
         flowManagementClient.putFlow(registrationFlowRequest);
     }
 
@@ -99,8 +92,8 @@ public class FlowManagementPositiveTest extends FlowManagementTestBase {
     public void testGetRegistrationFlow() throws Exception {
 
         ObjectMapper jsonReader = new ObjectMapper(new JsonFactory());
-        FlowRequest expectedRegistrationFlowRequest = getFlowRequest(jsonReader);
-        FlowResponse registrationFlowResponse = flowManagementClient.getFlow("REGISTRATION");
+        FlowRequest expectedRegistrationFlowRequest = getFlowRequest(jsonReader, registrationFlowRequestJson);
+        FlowResponse registrationFlowResponse = flowManagementClient.getFlow(REGISTRATION);
         assert registrationFlowResponse.getSteps().equals(expectedRegistrationFlowRequest.getSteps())
                 : "Registration flow mismatch";
     }
@@ -108,22 +101,18 @@ public class FlowManagementPositiveTest extends FlowManagementTestBase {
     @Test
     public void testSetFlowConfigs() throws Exception {
 
-        // Define flows to set
         List<FlowConfigRequest> configsToSet = Arrays.asList(
-                new FlowConfigRequest("REGISTRATION", true, true),
-                new FlowConfigRequest("PASSWORD_RECOVERY", true, true),
-                new FlowConfigRequest("INVITED_USER_REGISTRATION", true, true)
+                new FlowConfigRequest(REGISTRATION, true, true),
+                new FlowConfigRequest(PASSWORD_RECOVERY, true, true),
+                new FlowConfigRequest(INVITED_USER_REGISTRATION, true, true)
         );
 
-        // Apply configs
         for (FlowConfigRequest config : configsToSet) {
             flowManagementClient.setFlowConfig(config);
         }
 
-        // Fetch back
         List<FlowConfigResponse> appliedConfigs = flowManagementClient.getFlowConfigs();
 
-        // Verify each flow is enabled with auto login enabled
         for (FlowConfigRequest expected : configsToSet) {
             boolean match = appliedConfigs.stream().anyMatch(resp ->
                     expected.getFlowType().equals(resp.getFlowType()) &&
@@ -137,22 +126,19 @@ public class FlowManagementPositiveTest extends FlowManagementTestBase {
     @Test(description = "Test get flow configs", dependsOnMethods = "testSetFlowConfigs")
     public void testGetFlowConfigs() throws Exception {
 
-        // Call the API — should return a List of FlowConfigResponse
         List<FlowConfigResponse> response = flowManagementClient.getFlowConfigs();
-
         Assert.assertNotNull(response, "FlowConfigResponse list is null");
 
-        // Validate that expected flows exist
         FlowConfigResponse registrationFlow = response.stream()
-                .filter(f -> "REGISTRATION".equals(f.getFlowType()))
+                .filter(f -> REGISTRATION.equals(f.getFlowType()))
                 .findFirst().orElse(null);
 
         FlowConfigResponse passwordRecoveryFlow = response.stream()
-                .filter(f -> "PASSWORD_RECOVERY".equals(f.getFlowType()))
+                .filter(f -> PASSWORD_RECOVERY.equals(f.getFlowType()))
                 .findFirst().orElse(null);
 
         FlowConfigResponse invitedUserFlow = response.stream()
-                .filter(f -> "INVITED_USER_REGISTRATION".equals(f.getFlowType()))
+                .filter(f -> INVITED_USER_REGISTRATION.equals(f.getFlowType()))
                 .findFirst().orElse(null);
 
         Assert.assertNotNull(registrationFlow, "Missing REGISTRATION flow");
@@ -162,5 +148,11 @@ public class FlowManagementPositiveTest extends FlowManagementTestBase {
         Assert.assertTrue(registrationFlow.getIsEnabled(), "REGISTRATION flow is not enabled");
         Assert.assertTrue(passwordRecoveryFlow.getIsEnabled(), "PASSWORD_RECOVERY flow is not enabled");
         Assert.assertTrue(invitedUserFlow.getIsEnabled(), "INVITED_USER_REGISTRATION flow is not enabled");
+    }
+
+    private static FlowRequest getFlowRequest(ObjectMapper jsonReader, String flowRequestJson)
+            throws JsonProcessingException {
+
+        return jsonReader.readValue(flowRequestJson, FlowRequest.class);
     }
 }
