@@ -18,7 +18,6 @@
 
 package org.wso2.identity.integration.test.rest.api.server.flow.management.v1;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -32,16 +31,21 @@ import org.wso2.identity.integration.test.rest.api.server.flow.management.v1.mod
 import org.wso2.identity.integration.test.restclients.FlowManagementClient;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * This class contains the test cases for Flow Management API.
+ * This class contains the negative test cases for Flow Management API.
  */
 public class FlowManagementNegativeTest extends FlowManagementTestBase {
 
+    private static final ObjectMapper JSON = new ObjectMapper();
+    private static final String INVALID_TYPE = "INVALID";
+
     private FlowManagementClient flowManagementClient;
-    private static String registrationFlowRequestJson;
-    private static String passwordRecoveryFlowRequestJson;
-    private static String invitedUserRegistrationFlowRequestJson;
+
+    private final Map<String, String> flowJsonByType = new HashMap<>();
+    private final Map<String, FlowRequest> parsedFlowByType = new HashMap<>();
 
     @DataProvider
     public static Object[][] restAPIUserConfigProvider() {
@@ -67,67 +71,66 @@ public class FlowManagementNegativeTest extends FlowManagementTestBase {
 
         super.testInit(API_VERSION, swaggerDefinition, tenantInfo.getDomain());
         flowManagementClient = new FlowManagementClient(serverURL, tenantInfo);
-        registrationFlowRequestJson = readResource(REGISTRATION_FLOW);
-        passwordRecoveryFlowRequestJson = readResource(PASSWORD_RECOVERY_FLOW);
-        invitedUserRegistrationFlowRequestJson = readResource(INVITED_USER_REGISTRATION_FLOW);
+
+        flowJsonByType.put(REGISTRATION, readResource(REGISTRATION_FLOW));
+        flowJsonByType.put(PASSWORD_RECOVERY, readResource(PASSWORD_RECOVERY_FLOW));
+        flowJsonByType.put(INVITED_USER_REGISTRATION, readResource(INVITED_USER_REGISTRATION_FLOW));
+
+        for (Map.Entry<String, String> e : flowJsonByType.entrySet()) {
+            parsedFlowByType.put(e.getKey(), JSON.readValue(e.getValue(), FlowRequest.class));
+        }
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public void cleanup() throws Exception {
 
         flowManagementClient.closeHttpClient();
         super.testConclude();
     }
 
-    @Test(description = "Test invalid registration flow request")
-    public void testInvalidRegistrationFlowRequest() throws Exception {
-
-        ObjectMapper objectMapper = new ObjectMapper(new JsonFactory());
-        FlowRequest registrationFlowRequest = objectMapper.readValue(registrationFlowRequestJson,
-                FlowRequest.class);
-        registrationFlowRequest.getSteps().get(0).setType("INVALID");
-        try {
-            flowManagementClient.putFlow(registrationFlowRequest);
-        } catch (Exception e) {
-            Assert.assertNotNull(e.getMessage());
-            Assert.assertTrue(e.getMessage().contains("Error code 400"));
-        }
+    @DataProvider(name = "invalidFlowProvider")
+    public Object[][] invalidFlowProvider() {
+        return new Object[][]{
+                {REGISTRATION},
+                {PASSWORD_RECOVERY},
+                {INVITED_USER_REGISTRATION}
+        };
     }
 
-    @Test(description = "Test invalid password recovery flow request")
-    public void testInvalidPasswordRecoveryFlowRequest() throws Exception {
+    @Test(description = "Putting a flow with an invalid step type should return 400",
+            dataProvider = "invalidFlowProvider")
+    public void testInvalidFlowRequests(String flowType) throws Exception {
 
-        ObjectMapper objectMapper = new ObjectMapper(new JsonFactory());
-        FlowRequest passwordRecoveryFlowRequest = objectMapper.readValue(passwordRecoveryFlowRequestJson,
-                FlowRequest.class);
-        passwordRecoveryFlowRequest.getSteps().get(0).setType("INVALID");
-        try {
-            flowManagementClient.putFlow(passwordRecoveryFlowRequest);
-        } catch (Exception e) {
-            Assert.assertNotNull(e.getMessage());
-            Assert.assertTrue(e.getMessage().contains("Error code 400"));
-        }
+        FlowRequest invalid = cloneParsed(flowType);
+        invalid.getSteps().get(0).setType(INVALID_TYPE);
+        assertPutFlowBadRequest(invalid);
     }
 
-    @Test(description = "Test invalid invited user registration flow request")
-    public void testInvalidInvitedUserRegistrationFlowRequest() throws Exception {
-
-        ObjectMapper objectMapper = new ObjectMapper(new JsonFactory());
-        FlowRequest invitedUserRegistrationFlowRequest = objectMapper.readValue(invitedUserRegistrationFlowRequestJson,
-                FlowRequest.class);
-        invitedUserRegistrationFlowRequest.getSteps().get(0).setType("INVALID");
-        try {
-            flowManagementClient.putFlow(invitedUserRegistrationFlowRequest);
-        } catch (Exception e) {
-            Assert.assertNotNull(e.getMessage());
-            Assert.assertTrue(e.getMessage().contains("Error code 400"));
-        }
-    }
-
-    @Test(expectedExceptions = Exception.class)
+    @Test(expectedExceptions = Exception.class,
+            description = "Setting config with invalid (null) flow type should error")
     public void testSetFlowConfigWithInvalidFlowType() throws Exception {
 
         FlowConfigRequest invalid = new FlowConfigRequest(null, false, true);
         flowManagementClient.setFlowConfig(invalid);
+    }
+
+    private FlowRequest cloneParsed(String flowType) throws IOException {
+
+        FlowRequest src = parsedFlowByType.get(flowType);
+        Assert.assertNotNull(src, "No parsed flow for type: " + flowType);
+        return JSON.readValue(JSON.writeValueAsBytes(src), FlowRequest.class);
+    }
+
+    private void assertPutFlowBadRequest(FlowRequest request) {
+
+        try {
+            flowManagementClient.putFlow(request);
+            Assert.fail("Expected 400 error for invalid flow request");
+        } catch (Exception e) {
+            String msg = e.getMessage();
+            Assert.assertNotNull(msg, "Exception message is null");
+            Assert.assertTrue(msg.contains("Error code 400"),
+                    "Expected 400 error, but got: " + msg);
+        }
     }
 }
