@@ -44,6 +44,7 @@ import java.util.List;
 public class FlowManagementPositiveTest extends FlowManagementTestBase {
 
     private static String registrationFlowRequestJson;
+    private static String passwordRecoveryFlowRequestJson;
     private FlowManagementClient flowManagementClient;
 
     @Factory(dataProvider = "restAPIUserConfigProvider")
@@ -71,6 +72,7 @@ public class FlowManagementPositiveTest extends FlowManagementTestBase {
         super.testInit(API_VERSION, swaggerDefinition, tenantInfo.getDomain());
         flowManagementClient = new FlowManagementClient(serverURL, tenantInfo);
         registrationFlowRequestJson = readResource(REGISTRATION_FLOW);
+        passwordRecoveryFlowRequestJson = readResource(PASSWORD_RECOVERY_FLOW);
     }
 
     @AfterClass(alwaysRun = true)
@@ -96,6 +98,24 @@ public class FlowManagementPositiveTest extends FlowManagementTestBase {
         FlowResponse registrationFlowResponse = flowManagementClient.getFlow(REGISTRATION);
         assert registrationFlowResponse.getSteps().equals(expectedRegistrationFlowRequest.getSteps())
                 : "Registration flow mismatch";
+    }
+
+    @Test(description = "Test update password recovery flow")
+    public void testUpdatePasswordRecoveryFlow() throws Exception {
+
+        ObjectMapper jsonReader = new ObjectMapper(new JsonFactory());
+        FlowRequest passwordRecoveryFlowRequest = getFlowRequest(jsonReader, passwordRecoveryFlowRequestJson);
+        flowManagementClient.putFlow(passwordRecoveryFlowRequest);
+    }
+
+    @Test(description = "Test get password recovery flow", dependsOnMethods = "testUpdatePasswordRecoveryFlow")
+    public void testGetPasswordRecoveryFlow() throws Exception {
+
+        ObjectMapper jsonReader = new ObjectMapper(new JsonFactory());
+        FlowRequest expectedPasswordRecoveryFlowRequest = getFlowRequest(jsonReader, passwordRecoveryFlowRequestJson);
+        FlowResponse passwordRecoveryFlowResponse = flowManagementClient.getFlow(PASSWORD_RECOVERY);
+        assert passwordRecoveryFlowResponse.getSteps().equals(expectedPasswordRecoveryFlowRequest.getSteps())
+                : "Password Recovery flow mismatch";
     }
 
     @Test

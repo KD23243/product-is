@@ -40,6 +40,7 @@ public class FlowManagementNegativeTest extends FlowManagementTestBase {
 
     private FlowManagementClient flowManagementClient;
     private static String registrationFlowRequestJson;
+    private static String passwordRecoveryFlowRequestJson;
 
     @DataProvider
     public static Object[][] restAPIUserConfigProvider() {
@@ -66,6 +67,7 @@ public class FlowManagementNegativeTest extends FlowManagementTestBase {
         super.testInit(API_VERSION, swaggerDefinition, tenantInfo.getDomain());
         flowManagementClient = new FlowManagementClient(serverURL, tenantInfo);
         registrationFlowRequestJson = readResource(REGISTRATION_FLOW);
+        passwordRecoveryFlowRequestJson = readResource(PASSWORD_RECOVERY_FLOW);
     }
 
     @AfterClass
@@ -84,6 +86,21 @@ public class FlowManagementNegativeTest extends FlowManagementTestBase {
         registrationFlowRequest.getSteps().get(0).setType("INVALID");
         try {
             flowManagementClient.putFlow(registrationFlowRequest);
+        } catch (Exception e) {
+            Assert.assertNotNull(e.getMessage());
+            Assert.assertTrue(e.getMessage().contains("Error code 400"));
+        }
+    }
+
+    @Test(description = "Test invalid password recovery flow request")
+    public void testInvalidPasswordRecoveryFlowRequest() throws Exception {
+
+        ObjectMapper objectMapper = new ObjectMapper(new JsonFactory());
+        FlowRequest passwordRecoveryFlowRequest = objectMapper.readValue(passwordRecoveryFlowRequestJson,
+                FlowRequest.class);
+        passwordRecoveryFlowRequest.getSteps().get(0).setType("INVALID");
+        try {
+            flowManagementClient.putFlow(passwordRecoveryFlowRequest);
         } catch (Exception e) {
             Assert.assertNotNull(e.getMessage());
             Assert.assertTrue(e.getMessage().contains("Error code 400"));
