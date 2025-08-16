@@ -1,0 +1,90 @@
+{
+  "flowType": "INVITED_USER_REGISTRATION",
+  "steps": [
+    {
+      "id": "ID_g1it",
+      "type": "EXECUTION",
+      "data": {
+        "action": {
+          "type": "EXECUTOR",
+          "executor": {
+            "name": "ConfirmationCodeValidationExecutor"
+          },
+          "next": "ID_uqon"
+        }
+      },
+      "size": {
+        "height": 71.0,
+        "width": 207.0
+      },
+      "position": {
+        "x": 200.0,
+        "y": 200.0
+      }
+    },
+    {
+      "id": "ID_uqon",
+      "type": "VIEW",
+      "data": {
+        "components": [
+          {
+            "id": "typography_41qq",
+            "category": "DISPLAY",
+            "type": "TYPOGRAPHY",
+            "variant": "H3",
+            "config": {
+              "text": "Set Password"
+            }
+          },
+          {
+            "id": "form_6zvu",
+            "category": "BLOCK",
+            "type": "FORM",
+            "components": [
+              {
+                "id": "input_39bq",
+                "category": "FIELD",
+                "type": "INPUT",
+                "variant": "PASSWORD",
+                "config": {
+                  "identifier": "password",
+                  "type": "password",
+                  "hint": "",
+                  "label": "Password",
+                  "required": false,
+                  "placeholder": "Enter your password"
+                }
+              },
+              {
+                "id": "button_jevg",
+                "category": "ACTION",
+                "type": "BUTTON",
+                "variant": "PRIMARY",
+                "action": {
+                  "type": "EXECUTOR",
+                  "executor": {
+                    "name": "PasswordProvisioningExecutor"
+                  },
+                  "next": "End"
+                },
+                "config": {
+                  "type": "submit",
+                  "text": "Continue"
+                }
+              }
+            ],
+            "config": {}
+          }
+        ]
+      },
+      "size": {
+        "height": 453.0,
+        "width": 350.0
+      },
+      "position": {
+        "x": 500.0,
+        "y": 319.0
+      }
+    }
+  ]
+}

@@ -41,6 +41,7 @@ public class FlowManagementNegativeTest extends FlowManagementTestBase {
     private FlowManagementClient flowManagementClient;
     private static String registrationFlowRequestJson;
     private static String passwordRecoveryFlowRequestJson;
+    private static String invitedUserRegistrationFlowRequestJson;
 
     @DataProvider
     public static Object[][] restAPIUserConfigProvider() {
@@ -68,6 +69,7 @@ public class FlowManagementNegativeTest extends FlowManagementTestBase {
         flowManagementClient = new FlowManagementClient(serverURL, tenantInfo);
         registrationFlowRequestJson = readResource(REGISTRATION_FLOW);
         passwordRecoveryFlowRequestJson = readResource(PASSWORD_RECOVERY_FLOW);
+        invitedUserRegistrationFlowRequestJson = readResource(INVITED_USER_REGISTRATION_FLOW);
     }
 
     @AfterClass
@@ -101,6 +103,21 @@ public class FlowManagementNegativeTest extends FlowManagementTestBase {
         passwordRecoveryFlowRequest.getSteps().get(0).setType("INVALID");
         try {
             flowManagementClient.putFlow(passwordRecoveryFlowRequest);
+        } catch (Exception e) {
+            Assert.assertNotNull(e.getMessage());
+            Assert.assertTrue(e.getMessage().contains("Error code 400"));
+        }
+    }
+
+    @Test(description = "Test invalid invited user registration flow request")
+    public void testInvalidInvitedUserRegistrationFlowRequest() throws Exception {
+
+        ObjectMapper objectMapper = new ObjectMapper(new JsonFactory());
+        FlowRequest invitedUserRegistrationFlowRequest = objectMapper.readValue(invitedUserRegistrationFlowRequestJson,
+                FlowRequest.class);
+        invitedUserRegistrationFlowRequest.getSteps().get(0).setType("INVALID");
+        try {
+            flowManagementClient.putFlow(invitedUserRegistrationFlowRequest);
         } catch (Exception e) {
             Assert.assertNotNull(e.getMessage());
             Assert.assertTrue(e.getMessage().contains("Error code 400"));

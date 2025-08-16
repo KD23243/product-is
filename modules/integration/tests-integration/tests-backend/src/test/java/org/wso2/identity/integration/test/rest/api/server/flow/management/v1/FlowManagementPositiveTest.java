@@ -45,6 +45,7 @@ public class FlowManagementPositiveTest extends FlowManagementTestBase {
 
     private static String registrationFlowRequestJson;
     private static String passwordRecoveryFlowRequestJson;
+    private static String invitedUserRegistrationFlowRequestJson;
     private FlowManagementClient flowManagementClient;
 
     @Factory(dataProvider = "restAPIUserConfigProvider")
@@ -73,6 +74,7 @@ public class FlowManagementPositiveTest extends FlowManagementTestBase {
         flowManagementClient = new FlowManagementClient(serverURL, tenantInfo);
         registrationFlowRequestJson = readResource(REGISTRATION_FLOW);
         passwordRecoveryFlowRequestJson = readResource(PASSWORD_RECOVERY_FLOW);
+        invitedUserRegistrationFlowRequestJson = readResource(INVITED_USER_REGISTRATION_FLOW);
     }
 
     @AfterClass(alwaysRun = true)
@@ -116,6 +118,27 @@ public class FlowManagementPositiveTest extends FlowManagementTestBase {
         FlowResponse passwordRecoveryFlowResponse = flowManagementClient.getFlow(PASSWORD_RECOVERY);
         assert passwordRecoveryFlowResponse.getSteps().equals(expectedPasswordRecoveryFlowRequest.getSteps())
                 : "Password Recovery flow mismatch";
+    }
+
+    @Test(description = "Test update invited user registration flow")
+    public void testUpdateInvitedUserRegistrationFlow() throws Exception {
+
+        ObjectMapper jsonReader = new ObjectMapper(new JsonFactory());
+        FlowRequest invitedUserRegistrationFlowRequest = getFlowRequest(jsonReader,
+                invitedUserRegistrationFlowRequestJson);
+        flowManagementClient.putFlow(invitedUserRegistrationFlowRequest);
+    }
+
+    @Test(description = "Test get invited user registration flow",
+            dependsOnMethods = "testUpdateInvitedUserRegistrationFlow")
+    public void testGetInvitedUserRegistrationFlow() throws Exception {
+
+        ObjectMapper jsonReader = new ObjectMapper(new JsonFactory());
+        FlowRequest expectedInvitedUserRegistrationFlowRequest = getFlowRequest(jsonReader,
+                invitedUserRegistrationFlowRequestJson);
+        FlowResponse invitedUserRegistrationFlowResponse = flowManagementClient.getFlow(INVITED_USER_REGISTRATION);
+        assert invitedUserRegistrationFlowResponse.getSteps().equals(expectedInvitedUserRegistrationFlowRequest.getSteps())
+                : "Invited User Registration flow mismatch";
     }
 
     @Test
