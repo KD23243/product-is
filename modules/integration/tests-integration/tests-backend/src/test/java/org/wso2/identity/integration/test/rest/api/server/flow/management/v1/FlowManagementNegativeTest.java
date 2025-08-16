@@ -27,6 +27,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Factory;
 import org.testng.annotations.Test;
 import org.wso2.carbon.automation.engine.context.TestUserMode;
+import org.wso2.identity.integration.test.rest.api.server.flow.management.v1.model.FlowConfigRequest;
 import org.wso2.identity.integration.test.rest.api.server.flow.management.v1.model.FlowRequest;
 import org.wso2.identity.integration.test.restclients.FlowManagementClient;
 
@@ -87,5 +88,12 @@ public class FlowManagementNegativeTest extends FlowManagementTestBase {
             Assert.assertNotNull(e.getMessage());
             Assert.assertTrue(e.getMessage().contains("Error code 400"));
         }
+    }
+
+    @Test(expectedExceptions = Exception.class)
+    public void testSetFlowConfigWithInvalidFlowType() throws Exception {
+
+        FlowConfigRequest invalid = new FlowConfigRequest(null, false, true);
+        flowManagementClient.setFlowConfig(invalid);
     }
 }
