@@ -95,7 +95,7 @@ public class FlowExecutionNegativeTest extends FlowExecutionTestBase {
         FlowManagementClient asd = new FlowManagementClient(serverURL, tenantInfo);
         FlowConfigRequest as = new FlowConfigRequest(REGISTRATION, false, true);
         asd.setFlowConfig(as);
-        Object responseObj = flowExecutionClient.initiateFlowExecution();
+        Object responseObj = flowExecutionClient.initiateFlowExecution(REGISTRATION);
         Assert.assertTrue(responseObj instanceof Error);
         Error error = (Error) responseObj;
         Assert.assertNotNull(error);
@@ -118,7 +118,7 @@ public class FlowExecutionNegativeTest extends FlowExecutionTestBase {
     public void testInitiateFlow() throws Exception {
 
         enableFlow(flowManagementClient, REGISTRATION);
-        Object responseObj = flowExecutionClient.initiateFlowExecution();
+        Object responseObj = flowExecutionClient.initiateFlowExecution(REGISTRATION);
         Assert.assertTrue(responseObj instanceof FlowExecutionResponse);
         FlowExecutionResponse response = (FlowExecutionResponse) responseObj;
         Assert.assertNotNull(response);
@@ -161,7 +161,7 @@ public class FlowExecutionNegativeTest extends FlowExecutionTestBase {
         inputs.put("http://wso2.org/claims/givenname", "John");
         inputs.put("http://wso2.org/claims/lastname", "Doe");
         enableFlow(flowManagementClient, REGISTRATION);
-        FlowExecutionResponse response = (FlowExecutionResponse) flowExecutionClient.initiateFlowExecution();
+        FlowExecutionResponse response = (FlowExecutionResponse) flowExecutionClient.initiateFlowExecution(REGISTRATION);
         Object responseObj = flowExecutionClient
                 .executeFlow(getFlowExecutionRequest(response.getFlowId(), inputs));
         Assert.assertTrue(responseObj instanceof Error);

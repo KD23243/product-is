@@ -40,6 +40,7 @@ import org.wso2.identity.integration.test.utils.UserUtil;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.wso2.identity.integration.test.rest.api.server.flow.management.v1.FlowManagementTestBase.PASSWORD_RECOVERY;
 import static org.wso2.identity.integration.test.rest.api.server.flow.management.v1.FlowManagementTestBase.REGISTRATION;
 
 /**
@@ -53,7 +54,8 @@ public class FlowExecutionPositiveTest extends FlowExecutionTestBase {
     private FlowExecutionClient flowExecutionClient;
     private FlowManagementClient flowManagementClient;
     private IdentityGovernanceRestClient identityGovernanceRestClient;
-    private static String flowId;
+    private static String registrationFlowId;
+    private static String passwordRecoveryFlowId;
     private AuthenticatorRestClient authenticatorRestClient;
     private SCIM2RestClient scim2RestClient;
 
@@ -86,7 +88,9 @@ public class FlowExecutionPositiveTest extends FlowExecutionTestBase {
         authenticatorRestClient = new AuthenticatorRestClient(serverURL, tenantInfo);
         scim2RestClient = new SCIM2RestClient(serverURL, tenantInfo);
         enableFlow(flowManagementClient, REGISTRATION);
+        enableFlow(flowManagementClient, PASSWORD_RECOVERY);
         addFlow(flowManagementClient, REGISTRATION_FLOW);
+        addFlow(flowManagementClient, PASSWORD_RECOVERY_FLOW);
     }
 
     @AfterClass(alwaysRun = true)
@@ -94,6 +98,7 @@ public class FlowExecutionPositiveTest extends FlowExecutionTestBase {
 
         deleteUser();
         disableFlow(flowManagementClient, REGISTRATION);
+        disableFlow(flowManagementClient, PASSWORD_RECOVERY);
         identityGovernanceRestClient.closeHttpClient();
         flowExecutionClient.closeHttpClient();
         flowManagementClient.closeHttpClient();
@@ -102,14 +107,14 @@ public class FlowExecutionPositiveTest extends FlowExecutionTestBase {
     }
 
     @Test
-    public void initiateFlow() throws Exception {
+    public void initiateRegistrationFlow() throws Exception {
 
-        Object responseObj = flowExecutionClient.initiateFlowExecution();
+        Object responseObj = flowExecutionClient.initiateFlowExecution(REGISTRATION);
         Assert.assertTrue(responseObj instanceof FlowExecutionResponse);
         FlowExecutionResponse response = (FlowExecutionResponse) responseObj;
         Assert.assertNotNull(response);
         Assert.assertNotNull(response.getFlowId());
-        flowId = response.getFlowId();
+        registrationFlowId = response.getFlowId();
         Assert.assertEquals(response.getFlowStatus(), STATUS_INCOMPLETE);
         Assert.assertEquals(response.getType().toString(), TYPE_VIEW);
         Assert.assertNotNull(response.getData());
@@ -117,11 +122,27 @@ public class FlowExecutionPositiveTest extends FlowExecutionTestBase {
         Assert.assertEquals(response.getData().getComponents().size(), 2);
     }
 
-    @Test(dependsOnMethods = "initiateFlow")
-    public void executeFlow() throws Exception {
+    @Test
+    public void initiatePasswordRecoveryFlow() throws Exception {
+
+        Object responseObj = flowExecutionClient.initiateFlowExecution(PASSWORD_RECOVERY);
+        Assert.assertTrue(responseObj instanceof FlowExecutionResponse);
+        FlowExecutionResponse response = (FlowExecutionResponse) responseObj;
+        Assert.assertNotNull(response);
+        Assert.assertNotNull(response.getFlowId());
+        passwordRecoveryFlowId = response.getFlowId();
+        Assert.assertEquals(response.getFlowStatus(), STATUS_INCOMPLETE);
+        Assert.assertEquals(response.getType().toString(), TYPE_VIEW);
+        Assert.assertNotNull(response.getData());
+        Assert.assertNotNull(response.getData().getComponents());
+        Assert.assertEquals(response.getData().getComponents().size(), 2);
+    }
+
+    @Test(dependsOnMethods = "initiateRegistrationFlow")
+    public void executeRegistrationFlow() throws Exception {
 
         Object responseObj = flowExecutionClient
-                .executeFlow(getFlowExecutionRequest());
+                .executeFlow(getFlowRegistrationExecutionRequest());
         Assert.assertTrue(responseObj instanceof FlowExecutionResponse);
         FlowExecutionResponse response = (FlowExecutionResponse) responseObj;
         Assert.assertNotNull(response);
@@ -130,7 +151,7 @@ public class FlowExecutionPositiveTest extends FlowExecutionTestBase {
         Assert.assertNotNull(response.getData());
     }
 
-    @Test(dependsOnMethods = "executeFlow")
+    @Test(dependsOnMethods = "executeRegistrationFlow")
     public void verifyUserLogin() throws Exception {
 
         unLockUser();
@@ -138,10 +159,10 @@ public class FlowExecutionPositiveTest extends FlowExecutionTestBase {
         Assert.assertNotNull(authenticationResponse.get("token"), "Authentication failed for user: " + USER);
     }
 
-    private static FlowExecutionRequest getFlowExecutionRequest() {
+    private static FlowExecutionRequest getFlowRegistrationExecutionRequest() {
 
         FlowExecutionRequest flowExecutionRequest = new FlowExecutionRequest();
-        flowExecutionRequest.setFlowId(flowId);
+        flowExecutionRequest.setFlowId(registrationFlowId);
         flowExecutionRequest.setFlowType(REGISTRATION);
         flowExecutionRequest.setActionId("button_5zqc");
         Map<String, String> inputs = new HashMap<>();

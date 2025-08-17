@@ -39,6 +39,7 @@ public class FlowExecutionTestBase extends RESTAPIServerTestBase {
     protected static final String TYPE_VIEW = "VIEW";
     protected static final String TYPE_REDIRECTION = "REDIRECTION";
     protected static final String REGISTRATION_FLOW = "registration-flow.json";
+    protected static final String PASSWORD_RECOVERY_FLOW = "password-recovery-flow.json";
     protected static final String API_DEFINITION_NAME = "flow-execution.yaml";
     protected static final String API_VERSION = "v1";
     protected static final String API_PACKAGE_NAME = "org.wso2.carbon.identity.api.server.flow.execution.v1";
