@@ -40,6 +40,8 @@ import org.wso2.identity.integration.test.utils.UserUtil;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.wso2.identity.integration.test.rest.api.server.flow.management.v1.FlowManagementTestBase.REGISTRATION;
+
 /**
  * Test class for Flow Execution API.
  */
@@ -83,15 +85,15 @@ public class FlowExecutionPositiveTest extends FlowExecutionTestBase {
         identityGovernanceRestClient = new IdentityGovernanceRestClient(serverURL, tenantInfo);
         authenticatorRestClient = new AuthenticatorRestClient(serverURL, tenantInfo);
         scim2RestClient = new SCIM2RestClient(serverURL, tenantInfo);
-        enableNewRegistrationFlow(identityGovernanceRestClient);
-        addRegistrationFlow(flowManagementClient);
+        enableFlow(flowManagementClient, REGISTRATION);
+        addFlow(flowManagementClient, REGISTRATION_FLOW);
     }
 
     @AfterClass(alwaysRun = true)
     public void tearDownClass() throws Exception {
 
         deleteUser();
-        disableNewRegistrationFlow(identityGovernanceRestClient);
+        disableFlow(flowManagementClient, REGISTRATION);
         identityGovernanceRestClient.closeHttpClient();
         flowExecutionClient.closeHttpClient();
         flowManagementClient.closeHttpClient();
@@ -140,7 +142,7 @@ public class FlowExecutionPositiveTest extends FlowExecutionTestBase {
 
         FlowExecutionRequest flowExecutionRequest = new FlowExecutionRequest();
         flowExecutionRequest.setFlowId(flowId);
-        flowExecutionRequest.setFlowType("REGISTRATION");
+        flowExecutionRequest.setFlowType(REGISTRATION);
         flowExecutionRequest.setActionId("button_5zqc");
         Map<String, String> inputs = new HashMap<>();
         inputs.put("http://wso2.org/claims/username", USER);

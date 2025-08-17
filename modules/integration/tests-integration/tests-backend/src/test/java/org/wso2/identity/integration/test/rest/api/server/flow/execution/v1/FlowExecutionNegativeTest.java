@@ -35,6 +35,8 @@ import org.wso2.identity.integration.test.restclients.FlowExecutionClient;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.wso2.identity.integration.test.rest.api.server.flow.management.v1.FlowManagementTestBase.REGISTRATION;
+
 /**
  * Test class for Flow Execution API.
  */
@@ -73,14 +75,14 @@ public class FlowExecutionNegativeTest extends FlowExecutionTestBase {
         flowExecutionClient = new FlowExecutionClient(serverURL, tenantInfo);
         flowManagementClient = new FlowManagementClient(serverURL, tenantInfo);
         identityGovernanceRestClient = new IdentityGovernanceRestClient(serverURL, tenantInfo);
-        addRegistrationFlow(flowManagementClient);
+        addFlow(flowManagementClient, REGISTRATION_FLOW);
     }
 
     @AfterClass(alwaysRun = true)
     public void testConclude() throws Exception {
 
         super.conclude();
-        disableNewRegistrationFlow(identityGovernanceRestClient);
+        disableFlow(flowManagementClient, REGISTRATION);
         identityGovernanceRestClient.closeHttpClient();
         flowManagementClient.closeHttpClient();
         flowExecutionClient.closeHttpClient();
@@ -111,7 +113,7 @@ public class FlowExecutionNegativeTest extends FlowExecutionTestBase {
     @Test(dependsOnMethods = "testExecuteFlowWithoutEnable")
     public void testInitiateFlow() throws Exception {
 
-        enableNewRegistrationFlow(identityGovernanceRestClient);
+        enableFlow(flowManagementClient, REGISTRATION);
         Object responseObj = flowExecutionClient.initiateFlowExecution();
         Assert.assertTrue(responseObj instanceof FlowExecutionResponse);
         FlowExecutionResponse response = (FlowExecutionResponse) responseObj;
@@ -168,7 +170,7 @@ public class FlowExecutionNegativeTest extends FlowExecutionTestBase {
 
         FlowExecutionRequest flowExecutionRequest = new FlowExecutionRequest();
         flowExecutionRequest.setFlowId(flowId != null ? flowId : "FLOW_ID");
-        flowExecutionRequest.setFlowType("REGISTRATION");
+        flowExecutionRequest.setFlowType(REGISTRATION);
         flowExecutionRequest.setActionId(FlowExecutionNegativeTest.ACTION_ID);
         flowExecutionRequest.setInputs(inputs);
         return flowExecutionRequest;

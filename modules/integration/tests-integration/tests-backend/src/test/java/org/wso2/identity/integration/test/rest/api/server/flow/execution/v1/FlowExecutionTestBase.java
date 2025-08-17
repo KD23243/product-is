@@ -25,11 +25,9 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.wso2.identity.integration.test.rest.api.server.common.RESTAPIServerTestBase;
+import org.wso2.identity.integration.test.rest.api.server.flow.management.v1.model.FlowConfigRequest;
 import org.wso2.identity.integration.test.rest.api.server.flow.management.v1.model.FlowRequest;
-import org.wso2.identity.integration.test.rest.api.server.identity.governance.v1.dto.ConnectorsPatchReq;
-import org.wso2.identity.integration.test.rest.api.server.identity.governance.v1.dto.PropertyReq;
 import org.wso2.identity.integration.test.restclients.FlowManagementClient;
-import org.wso2.identity.integration.test.restclients.IdentityGovernanceRestClient;
 
 /**
  * This class contains the test cases for Registration Execution API.
@@ -73,46 +71,23 @@ public class FlowExecutionTestBase extends RESTAPIServerTestBase {
         RestAssured.basePath = StringUtils.EMPTY;
     }
 
-    protected void addRegistrationFlow(FlowManagementClient client) throws Exception {
+    protected void addFlow(FlowManagementClient client, String flowJson) throws Exception {
 
-        String registrationFlowRequestJson = readResource(REGISTRATION_FLOW);
+        String flowRequestJson = readResource(flowJson);
         FlowRequest flowRequest = new ObjectMapper()
-                .readValue(registrationFlowRequestJson, FlowRequest.class);
+                .readValue(flowRequestJson, FlowRequest.class);
         client.putFlow(flowRequest);
     }
 
-    protected void enableNewRegistrationFlow(IdentityGovernanceRestClient client) throws Exception {
+    protected void enableFlow(FlowManagementClient flowManagementClient, String flowType) throws Exception {
 
-        ConnectorsPatchReq connectorsPatchReq = new ConnectorsPatchReq();
-        connectorsPatchReq.setOperation(ConnectorsPatchReq.OperationEnum.UPDATE);
-        PropertyReq enableProperty = new PropertyReq();
-        enableProperty.setName("SelfRegistration.Enable");
-        enableProperty.setValue("true");
-        connectorsPatchReq.addProperties(enableProperty);
-
-        PropertyReq propertyReq = new PropertyReq();
-        propertyReq.setName("SelfRegistration.EnableDynamicPortal");
-        propertyReq.setValue("true");
-        connectorsPatchReq.addProperties(propertyReq);
-
-        client.updateConnectors("VXNlciBPbmJvYXJkaW5n", "c2VsZi1zaWduLXVw", connectorsPatchReq);
+        FlowConfigRequest flowConfigRequest = new FlowConfigRequest(flowType, true, true);
+        flowManagementClient.setFlowConfig(flowConfigRequest);
     }
 
-    protected void disableNewRegistrationFlow(IdentityGovernanceRestClient client) throws Exception {
+    protected void disableFlow(FlowManagementClient flowManagementClient, String flowType) throws Exception {
 
-        ConnectorsPatchReq connectorsPatchReq = new ConnectorsPatchReq();
-        connectorsPatchReq.setOperation(ConnectorsPatchReq.OperationEnum.UPDATE);
-
-        PropertyReq enableProperty = new PropertyReq();
-        enableProperty.setName("SelfRegistration.Enable");
-        enableProperty.setValue("false");
-        connectorsPatchReq.addProperties(enableProperty);
-
-        PropertyReq propertyReq = new PropertyReq();
-        propertyReq.setName("SelfRegistration.EnableDynamicPortal");
-        propertyReq.setValue("false");
-        connectorsPatchReq.addProperties(propertyReq);
-
-        client.updateConnectors("VXNlciBPbmJvYXJkaW5n", "c2VsZi1zaWduLXVw", connectorsPatchReq);
+        FlowConfigRequest flowConfigRequest = new FlowConfigRequest(flowType, false, false);
+        flowManagementClient.setFlowConfig(flowConfigRequest);
     }
 }
