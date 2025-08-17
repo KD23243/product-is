@@ -28,6 +28,7 @@ import org.wso2.carbon.automation.engine.context.TestUserMode;
 import org.wso2.identity.integration.test.rest.api.server.flow.execution.v1.model.FlowExecutionRequest;
 import org.wso2.identity.integration.test.rest.api.server.flow.execution.v1.model.FlowExecutionResponse;
 import org.wso2.identity.integration.test.rest.api.server.flow.management.v1.model.Error;
+import org.wso2.identity.integration.test.rest.api.server.flow.management.v1.model.FlowConfigRequest;
 import org.wso2.identity.integration.test.restclients.FlowManagementClient;
 import org.wso2.identity.integration.test.restclients.IdentityGovernanceRestClient;
 import org.wso2.identity.integration.test.restclients.FlowExecutionClient;
@@ -91,12 +92,15 @@ public class FlowExecutionNegativeTest extends FlowExecutionTestBase {
     @Test
     public void initiateRegistrationFlowWithoutEnable() throws Exception {
 
+        FlowManagementClient asd = new FlowManagementClient(serverURL, tenantInfo);
+        FlowConfigRequest as = new FlowConfigRequest(REGISTRATION, false, true);
+        asd.setFlowConfig(as);
         Object responseObj = flowExecutionClient.initiateFlowExecution();
         Assert.assertTrue(responseObj instanceof Error);
         Error error = (Error) responseObj;
         Assert.assertNotNull(error);
         Assert.assertNotNull(error.getCode());
-        Assert.assertEquals(error.getCode(), "RFM-60101");
+        Assert.assertEquals(error.getCode(), "FE-60101");
     }
 
     @Test(dependsOnMethods = "initiateRegistrationFlowWithoutEnable")
@@ -107,7 +111,7 @@ public class FlowExecutionNegativeTest extends FlowExecutionTestBase {
         Error error = (Error) responseObj;
         Assert.assertNotNull(error);
         Assert.assertNotNull(error.getCode());
-        Assert.assertEquals(error.getCode(), "FM-60101");
+        Assert.assertEquals(error.getCode(), "FE-60001");
     }
 
     @Test(dependsOnMethods = "testExecuteFlowWithoutEnable")
@@ -156,13 +160,15 @@ public class FlowExecutionNegativeTest extends FlowExecutionTestBase {
         inputs.put("http://wso2.org/claims/emailaddress", "test@test.com");
         inputs.put("http://wso2.org/claims/givenname", "John");
         inputs.put("http://wso2.org/claims/lastname", "Doe");
+        enableFlow(flowManagementClient, REGISTRATION);
+        FlowExecutionResponse response = (FlowExecutionResponse) flowExecutionClient.initiateFlowExecution();
         Object responseObj = flowExecutionClient
-                .executeFlow(getFlowExecutionRequest(flowId, inputs));
+                .executeFlow(getFlowExecutionRequest(response.getFlowId(), inputs));
         Assert.assertTrue(responseObj instanceof Error);
         Error error = (Error) responseObj;
         Assert.assertNotNull(error);
         Assert.assertNotNull(error.getCode());
-        Assert.assertEquals(error.getCode(), "FE-60002");
+        Assert.assertEquals(error.getCode(), "FE-60008");
     }
 
     private static FlowExecutionRequest getFlowExecutionRequest(String flowId,
