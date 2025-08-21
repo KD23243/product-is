@@ -122,7 +122,7 @@ public class FlowExecutionPositiveTest extends FlowExecutionTestBase {
         Assert.assertEquals(response.getData().getComponents().size(), 2);
     }
 
-    @Test
+    @Test(dependsOnMethods = "executeRegistrationFlow")
     public void initiatePasswordRecoveryFlow() throws Exception {
 
         Object responseObj = flowExecutionClient.initiateFlowExecution(PASSWORD_RECOVERY);
@@ -143,6 +143,18 @@ public class FlowExecutionPositiveTest extends FlowExecutionTestBase {
 
         Object responseObj = flowExecutionClient
                 .executeFlow(getFlowRegistrationExecutionRequest());
+        Assert.assertTrue(responseObj instanceof FlowExecutionResponse);
+        FlowExecutionResponse response = (FlowExecutionResponse) responseObj;
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getFlowStatus(), STATUS_INCOMPLETE);
+        Assert.assertEquals(response.getType().toString(), TYPE_REDIRECTION);
+        Assert.assertNotNull(response.getData());
+    }
+
+    @Test(dependsOnMethods = { "initiateRegistrationFlow", "executeRegistrationFlow", "initiatePasswordRecoveryFlow" })
+    public void executePasswordRecoveryFlow() throws Exception {
+
+        Object responseObj = flowExecutionClient.executeFlow(getFlowPasswordRecoveryExecutionRequest());
         Assert.assertTrue(responseObj instanceof FlowExecutionResponse);
         FlowExecutionResponse response = (FlowExecutionResponse) responseObj;
         Assert.assertNotNull(response);
@@ -171,6 +183,18 @@ public class FlowExecutionPositiveTest extends FlowExecutionTestBase {
         inputs.put("http://wso2.org/claims/emailaddress", "test@wso2.com");
         inputs.put("http://wso2.org/claims/givenname", "RegExecPosJohn");
         inputs.put("http://wso2.org/claims/lastname", "RegExecPosDoe");
+        flowExecutionRequest.setInputs(inputs);
+        return flowExecutionRequest;
+    }
+
+    private static FlowExecutionRequest getFlowPasswordRecoveryExecutionRequest() {
+
+        FlowExecutionRequest flowExecutionRequest = new FlowExecutionRequest();
+        flowExecutionRequest.setFlowId(passwordRecoveryFlowId);
+        flowExecutionRequest.setFlowType(PASSWORD_RECOVERY);
+        flowExecutionRequest.setActionId("button_b0ey");
+        Map<String, String> inputs = new HashMap<>();
+        inputs.put("http://wso2.org/claims/username", USER);
         flowExecutionRequest.setInputs(inputs);
         return flowExecutionRequest;
     }
