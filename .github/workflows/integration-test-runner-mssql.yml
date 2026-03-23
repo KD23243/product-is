@@ -127,11 +127,23 @@ jobs:
 
       - name: Locate IS distribution directory
         run: |
-          IS_DIST=$(find modules/distribution/target -maxdepth 1 -type d -name "wso2is-*" | head -1)
+          IS_DIST_DIR="modules/distribution/target"
+          IS_DIST=$(find "$IS_DIST_DIR" -maxdepth 1 -type d -name "wso2is-*" | head -1)
           if [ -z "$IS_DIST" ]; then
-            echo "ERROR: Could not locate IS distribution directory under modules/distribution/target/"
-            echo "Contents of modules/distribution/target/:"
-            ls -la modules/distribution/target/ || true
+            echo "No extracted directory found — unzipping distribution..."
+            IS_ZIP=$(find "$IS_DIST_DIR" -maxdepth 1 -name "wso2is-*.zip" ! -name "*-src.zip" | head -1)
+            if [ -z "$IS_ZIP" ]; then
+              echo "ERROR: No wso2is-*.zip found in $IS_DIST_DIR"
+              ls -la "$IS_DIST_DIR" || true
+              exit 1
+            fi
+            echo "Extracting $IS_ZIP..."
+            unzip -q "$IS_ZIP" -d "$IS_DIST_DIR/"
+            IS_DIST=$(find "$IS_DIST_DIR" -maxdepth 1 -type d -name "wso2is-*" | head -1)
+          fi
+          if [ -z "$IS_DIST" ]; then
+            echo "ERROR: Could not locate IS distribution directory after extraction"
+            ls -la "$IS_DIST_DIR" || true
             exit 1
           fi
           echo "IS_DIST=$IS_DIST" >> $GITHUB_ENV
