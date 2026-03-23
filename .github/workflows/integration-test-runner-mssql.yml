@@ -6,6 +6,10 @@ on:
         description: "Enter PR link (ex: https://github.com/wso2-extensions/identity-inbound-auth-oauth/pull/1481)"
         default:
         required: false
+      pack_url:
+        description: "URL to a pre-built WSO2 IS zip pack to test against (optional). If provided, the downloaded pack replaces the one built from source."
+        default:
+        required: false
 
 env:
   MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3 -Djdk.util.zip.disableZip64ExtraFieldValidation=true -XX:+HeapDumpOnOutOfMemoryError
@@ -111,6 +115,17 @@ jobs:
           JAVA_HOME: ${{ env.J21HOME }}
         run: |
           mvn clean install --batch-mode -Dmaven.test.skip=true | tee mvn-build.log
+
+      - name: Replace IS pack with provided pack
+        if: ${{ github.event.inputs.pack_url != '' }}
+        run: |
+          echo "Replacing built IS pack with pack from: ${{ github.event.inputs.pack_url }}"
+          IS_DIST_DIR="modules/distribution/target"
+          find "$IS_DIST_DIR" -maxdepth 1 -type d -name "wso2is-*" -exec rm -rf {} +
+          wget -q "${{ github.event.inputs.pack_url }}" -O /tmp/wso2is-pack.zip
+          unzip -q /tmp/wso2is-pack.zip -d "$IS_DIST_DIR/"
+          EXTRACTED=$(find "$IS_DIST_DIR" -maxdepth 1 -type d -name "wso2is-*" | head -1)
+          echo "Pack ready at: $EXTRACTED"
 
       - name: Install mssql-tools18
         run: |
