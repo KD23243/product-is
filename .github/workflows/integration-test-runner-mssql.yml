@@ -124,8 +124,18 @@ jobs:
           find "$IS_DIST_DIR" -maxdepth 1 -type d -name "wso2is-*" -exec rm -rf {} +
           wget -q "${{ github.event.inputs.pack_url }}" -O /tmp/wso2is-pack.zip
           unzip -q /tmp/wso2is-pack.zip -d "$IS_DIST_DIR/"
-          EXTRACTED=$(find "$IS_DIST_DIR" -maxdepth 1 -type d -name "wso2is-*" | head -1)
-          echo "Pack ready at: $EXTRACTED"
+
+      - name: Locate IS distribution directory
+        run: |
+          IS_DIST=$(find modules/distribution/target -maxdepth 1 -type d -name "wso2is-*" | head -1)
+          if [ -z "$IS_DIST" ]; then
+            echo "ERROR: Could not locate IS distribution directory under modules/distribution/target/"
+            echo "Contents of modules/distribution/target/:"
+            ls -la modules/distribution/target/ || true
+            exit 1
+          fi
+          echo "IS_DIST=$IS_DIST" >> $GITHUB_ENV
+          echo "IS distribution located at: $IS_DIST"
 
       - name: Install mssql-tools18
         run: |
@@ -154,7 +164,6 @@ jobs:
 
       - name: Run MSSQL schema scripts
         run: |
-          IS_DIST=$(find modules/distribution/target -maxdepth 1 -type d -name "wso2is-*" | head -1)
           echo "IS distribution directory: $IS_DIST"
           echo "Running shared DB schema script..."
           sqlcmd -S localhost,1433 -U SA -P "$MSSQL_SA_PASSWORD" -d "$WSO2_SHARED_DB" -i "$IS_DIST/dbscripts/mssql.sql" -C
@@ -168,7 +177,6 @@ jobs:
 
       - name: Add MSSQL JDBC driver to IS distribution
         run: |
-          IS_DIST=$(find modules/distribution/target -maxdepth 1 -type d -name "wso2is-*" | head -1)
           echo "Downloading MSSQL JDBC driver version $MSSQL_JDBC_VERSION..."
           mvn dependency:get -q -Dartifact=com.microsoft.sqlserver:mssql-jdbc:$MSSQL_JDBC_VERSION
           JDBC_JAR="$HOME/.m2/repository/com/microsoft/sqlserver/mssql-jdbc/$MSSQL_JDBC_VERSION/mssql-jdbc-$MSSQL_JDBC_VERSION.jar"
@@ -177,7 +185,6 @@ jobs:
 
       - name: Configure deployment.toml for MSSQL
         run: |
-          IS_DIST=$(find modules/distribution/target -maxdepth 1 -type d -name "wso2is-*" | head -1)
           DEPLOYMENT_TOML="$IS_DIST/repository/conf/deployment.toml"
           echo "Configuring $DEPLOYMENT_TOML for MSSQL..."
           python3 << PYEOF
