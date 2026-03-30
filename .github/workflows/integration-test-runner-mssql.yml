@@ -21,8 +21,7 @@ on:
 
 env:
   MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3 -Djdk.util.zip.disableZip64ExtraFieldValidation=true -XX:+HeapDumpOnOutOfMemoryError
-  MSSQL_SA_PASSWORD: ${{ secrets.MSSQL_SA_PASSWORD }}
-  MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+  DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
   WSO2_IDENTITY_DB: "WSO2IDENTITY_DB"
   WSO2_SHARED_DB: "WSO2SHARED_DB"
   WSO2_AGENT_IDENTITY_DB: "WSO2AGENTIDENTITY_DB"
@@ -144,7 +143,7 @@ jobs:
         if: ${{ github.event.inputs.database_type == 'mssql' }}
         run: |
           docker run -d --name mssql \
-            -e SA_PASSWORD="$MSSQL_SA_PASSWORD" \
+            -e SA_PASSWORD="$DB_PASSWORD" \
             -e ACCEPT_EULA=Y \
             -e MSSQL_PID=Developer \
             -p 1433:1433 \
@@ -164,7 +163,7 @@ jobs:
         run: |
           echo "Waiting for MSSQL to be ready..."
           for i in $(seq 1 30); do
-            if sqlcmd -S localhost,1433 -U SA -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1" -C 2>/dev/null; then
+            if sqlcmd -S localhost,1433 -U SA -P "$DB_PASSWORD" -Q "SELECT 1" -C 2>/dev/null; then
               echo "MSSQL is ready."
               break
             fi
@@ -172,9 +171,9 @@ jobs:
             sleep 5
           done
           echo "Creating WSO2 IS databases..."
-          sqlcmd -S localhost,1433 -U SA -P "$MSSQL_SA_PASSWORD" -Q "CREATE DATABASE [$WSO2_IDENTITY_DB]" -C
-          sqlcmd -S localhost,1433 -U SA -P "$MSSQL_SA_PASSWORD" -Q "CREATE DATABASE [$WSO2_SHARED_DB]" -C
-          sqlcmd -S localhost,1433 -U SA -P "$MSSQL_SA_PASSWORD" -Q "CREATE DATABASE [$WSO2_AGENT_IDENTITY_DB]" -C
+          sqlcmd -S localhost,1433 -U SA -P "$DB_PASSWORD" -Q "CREATE DATABASE [$WSO2_IDENTITY_DB]" -C
+          sqlcmd -S localhost,1433 -U SA -P "$DB_PASSWORD" -Q "CREATE DATABASE [$WSO2_SHARED_DB]" -C
+          sqlcmd -S localhost,1433 -U SA -P "$DB_PASSWORD" -Q "CREATE DATABASE [$WSO2_AGENT_IDENTITY_DB]" -C
           echo "Databases created successfully."
 
       - name: Run MSSQL schema scripts
@@ -182,13 +181,13 @@ jobs:
         run: |
           echo "IS distribution directory: $IS_DIST"
           echo "Running shared DB schema script..."
-          sqlcmd -S localhost,1433 -U SA -P "$MSSQL_SA_PASSWORD" -d "$WSO2_SHARED_DB" -i "$IS_DIST/dbscripts/mssql.sql" -C
+          sqlcmd -S localhost,1433 -U SA -P "$DB_PASSWORD" -d "$WSO2_SHARED_DB" -i "$IS_DIST/dbscripts/mssql.sql" -C
           echo "Running identity DB schema script..."
-          sqlcmd -S localhost,1433 -U SA -P "$MSSQL_SA_PASSWORD" -d "$WSO2_IDENTITY_DB" -i "$IS_DIST/dbscripts/identity/mssql.sql" -C
+          sqlcmd -S localhost,1433 -U SA -P "$DB_PASSWORD" -d "$WSO2_IDENTITY_DB" -i "$IS_DIST/dbscripts/identity/mssql.sql" -C
           echo "Running agent identity DB schema script..."
-          sqlcmd -S localhost,1433 -U SA -P "$MSSQL_SA_PASSWORD" -d "$WSO2_AGENT_IDENTITY_DB" -i "$IS_DIST/dbscripts/identity/agent/mssql.sql" -C
+          sqlcmd -S localhost,1433 -U SA -P "$DB_PASSWORD" -d "$WSO2_AGENT_IDENTITY_DB" -i "$IS_DIST/dbscripts/identity/agent/mssql.sql" -C
           echo "Running consent schema script..."
-          sqlcmd -S localhost,1433 -U SA -P "$MSSQL_SA_PASSWORD" -d "$WSO2_IDENTITY_DB" -i "$IS_DIST/dbscripts/consent/mssql.sql" -C
+          sqlcmd -S localhost,1433 -U SA -P "$DB_PASSWORD" -d "$WSO2_IDENTITY_DB" -i "$IS_DIST/dbscripts/consent/mssql.sql" -C
           echo "All schema scripts executed successfully."
 
       - name: Add MSSQL JDBC driver to IS distribution
@@ -208,7 +207,7 @@ jobs:
           python3 << PYEOF
           import re, os
 
-          mssql_sa_password = "${MSSQL_SA_PASSWORD}"
+          mssql_sa_password = "${DB_PASSWORD}"
           ws_identity_db = "${WSO2_IDENTITY_DB}"
           ws_shared_db = "${WSO2_SHARED_DB}"
           ws_agent_db = "${WSO2_AGENT_IDENTITY_DB}"
@@ -253,7 +252,7 @@ jobs:
         if: ${{ github.event.inputs.database_type == 'mysql' }}
         run: |
           docker run -d --name mysql \
-            -e MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PASSWORD" \
+            -e MYSQL_ROOT_PASSWORD="$DB_PASSWORD" \
             -p 3306:3306 \
             mysql:8.0
 
@@ -265,18 +264,25 @@ jobs:
         if: ${{ github.event.inputs.database_type == 'mysql' }}
         run: |
           echo "Waiting for MySQL to be ready..."
+          MYSQL_READY=false
           for i in $(seq 1 30); do
-            if mysqladmin ping -h 127.0.0.1 -P 3306 -u root -p"$MYSQL_ROOT_PASSWORD" --silent 2>/dev/null; then
+            if mysqladmin ping -h 127.0.0.1 -P 3306 -u root -p"$DB_PASSWORD" --silent 2>/dev/null; then
               echo "MySQL is ready."
+              MYSQL_READY=true
               break
             fi
             echo "Attempt $i: MySQL not ready yet, retrying in 5 seconds..."
             sleep 5
           done
+          if [ "$MYSQL_READY" != "true" ]; then
+            echo "ERROR: MySQL did not become ready after 30 attempts."
+            docker logs mysql || true
+            exit 1
+          fi
           echo "Creating WSO2 IS databases..."
-          mysql -h 127.0.0.1 -P 3306 -u root -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE \`$WSO2_IDENTITY_DB\` CHARACTER SET latin1;"
-          mysql -h 127.0.0.1 -P 3306 -u root -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE \`$WSO2_SHARED_DB\` CHARACTER SET latin1;"
-          mysql -h 127.0.0.1 -P 3306 -u root -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE \`$WSO2_AGENT_IDENTITY_DB\` CHARACTER SET latin1;"
+          mysql -h 127.0.0.1 -P 3306 -u root -p"$DB_PASSWORD" -e "CREATE DATABASE \`$WSO2_IDENTITY_DB\` CHARACTER SET latin1;"
+          mysql -h 127.0.0.1 -P 3306 -u root -p"$DB_PASSWORD" -e "CREATE DATABASE \`$WSO2_SHARED_DB\` CHARACTER SET latin1;"
+          mysql -h 127.0.0.1 -P 3306 -u root -p"$DB_PASSWORD" -e "CREATE DATABASE \`$WSO2_AGENT_IDENTITY_DB\` CHARACTER SET latin1;"
           echo "Databases created successfully."
 
       - name: Run MySQL schema scripts
@@ -284,13 +290,13 @@ jobs:
         run: |
           echo "IS distribution directory: $IS_DIST"
           echo "Running shared DB schema script..."
-          mysql -h 127.0.0.1 -P 3306 -u root -p"$MYSQL_ROOT_PASSWORD" "$WSO2_SHARED_DB" < "$IS_DIST/dbscripts/mysql.sql"
+          mysql -h 127.0.0.1 -P 3306 -u root -p"$DB_PASSWORD" "$WSO2_SHARED_DB" < "$IS_DIST/dbscripts/mysql.sql"
           echo "Running identity DB schema script..."
-          mysql -h 127.0.0.1 -P 3306 -u root -p"$MYSQL_ROOT_PASSWORD" "$WSO2_IDENTITY_DB" < "$IS_DIST/dbscripts/identity/mysql.sql"
+          mysql -h 127.0.0.1 -P 3306 -u root -p"$DB_PASSWORD" "$WSO2_IDENTITY_DB" < "$IS_DIST/dbscripts/identity/mysql.sql"
           echo "Running agent identity DB schema script..."
-          mysql -h 127.0.0.1 -P 3306 -u root -p"$MYSQL_ROOT_PASSWORD" "$WSO2_AGENT_IDENTITY_DB" < "$IS_DIST/dbscripts/identity/agent/mysql.sql"
+          mysql -h 127.0.0.1 -P 3306 -u root -p"$DB_PASSWORD" "$WSO2_AGENT_IDENTITY_DB" < "$IS_DIST/dbscripts/identity/agent/mysql.sql"
           echo "Running consent schema script..."
-          mysql -h 127.0.0.1 -P 3306 -u root -p"$MYSQL_ROOT_PASSWORD" "$WSO2_IDENTITY_DB" < "$IS_DIST/dbscripts/consent/mysql.sql"
+          mysql -h 127.0.0.1 -P 3306 -u root -p"$DB_PASSWORD" "$WSO2_IDENTITY_DB" < "$IS_DIST/dbscripts/consent/mysql.sql"
           echo "All schema scripts executed successfully."
 
       - name: Add MySQL JDBC driver to IS distribution
@@ -310,7 +316,7 @@ jobs:
           python3 << PYEOF
           import re, os
 
-          mysql_root_password = "${MYSQL_ROOT_PASSWORD}"
+          mysql_root_password = "${DB_PASSWORD}"
           ws_identity_db = "${WSO2_IDENTITY_DB}"
           ws_shared_db = "${WSO2_SHARED_DB}"
           ws_agent_db = "${WSO2_AGENT_IDENTITY_DB}"
